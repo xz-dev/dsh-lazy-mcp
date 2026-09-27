@@ -1,0 +1,10 @@
+{
+  "name": "dsh-lazy-mcp",
+  "version": "0.1.0",
+  "description": "Lazy-start MCP stdio proxy: serve initialize/tools-list from cache, spawn the real server on first use",
+  "type": "module",
+  "license": "MIT",
+  "bin": { "dsh-lazy-mcp": "bin/dsh-lazy-mcp.js" },
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test test/" }
+}
