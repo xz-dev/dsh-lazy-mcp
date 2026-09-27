@@ -202,7 +202,9 @@ async function onDownstreamLine(line) {
       return;
     }
   }
-  if (isRequest && CACHEABLE.includes(msg.method) && cache?.responses?.[msg.method] && msg.method !== "initialize") {
+  // Cache answers only while the live server is down; once it is up, lists go to it
+  // (authoritative) so refreshCacheFromLive can detect drift.
+  if (isRequest && CACHEABLE.includes(msg.method) && cache?.responses?.[msg.method] && msg.method !== "initialize" && !childReady) {
     say(`${msg.method} <- cache`);
     out({ jsonrpc: "2.0", id: msg.id, result: cache.responses[msg.method] });
     return;
