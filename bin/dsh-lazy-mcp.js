@@ -191,6 +191,29 @@ async function onDownstreamLine(line) {
   let msg;
   try { msg = JSON.parse(line); } catch { say("unparsable host line dropped"); return; }
   const isRequest = msg.method !== undefined && msg.id !== undefined;
+  say(`<= ${isRequest ? "req" : "note"} ${msg.method ?? "(response)"}`);
+
+  // ping is a protocol-level no-op health check; answer locally, never spawn.
+  if (isRequest && msg.method === "ping") {
+    out({ jsonrpc: "2.0", id: msg.id, result: {} });
+    return;
+  }
+  // Stray notifications (cancelled, progress) must not spawn the server.
+  if (!isRequest && msg.method !== undefined && msg.method !== "notifications/initialized") {
+    if (child && childReady) sendUpstream(msg);
+    return;
+  }
+
+  // server/discover (MCP 2026-07-28 negotiation probe): synthesize from cached initialize.
+  if (isRequest && msg.method === "server/discover" && cache?.responses?.initialize) {
+    const init = cache.responses.initialize;
+    out({ jsonrpc: "2.0", id: msg.id, result: {
+      supportedVersions: init.protocolVersion ? [init.protocolVersion] : ["2025-06-18"],
+      capabilities: init.capabilities ?? {},
+      ...(init.instructions ? { instructions: init.instructions } : {}),
+    } });
+    return;
+  }
 
   if (isRequest && msg.method === "initialize") {
     cache = cache || { responses: {} };
